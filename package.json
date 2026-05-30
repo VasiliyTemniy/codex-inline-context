@@ -27,6 +27,7 @@
     "onCommand:codexInlineContext.copySelectionRef"
   ],
   "main": "./dist/extension.js",
+  "icon": "resources/icon.png",
   "contributes": {
     "commands": [
       {

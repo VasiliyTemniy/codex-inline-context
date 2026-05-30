@@ -3,3 +3,4 @@ dist
 *.vsix
 *.tsbuildinfo
 .vscode-test
+assets_gitignored
