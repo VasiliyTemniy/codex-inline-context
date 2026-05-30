@@ -1,0 +1,94 @@
+{
+  "name": "codex-inline-context",
+  "displayName": "Codex Inline Context",
+  "description": "Add selected ranges to Codex context and copy visible inline @file#line-range references.",
+  "version": "0.0.1",
+  "publisher": "vas",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VasiliyTemniy/codex-inline-context.git"
+  },
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "codex",
+    "openai",
+    "context",
+    "prompt",
+    "selection"
+  ],
+  "activationEvents": [
+    "onCommand:codexInlineContext.addSelection",
+    "onCommand:codexInlineContext.copySelectionRef"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codexInlineContext.addSelection",
+        "title": "Codex Inline Context: Add Selection",
+        "category": "Codex Inline Context",
+        "icon": "$(comment-add)"
+      },
+      {
+        "command": "codexInlineContext.copySelectionRef",
+        "title": "Codex Inline Context: Copy Selection Reference",
+        "category": "Codex Inline Context",
+        "icon": "$(copy)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codexInlineContext.addSelection",
+          "when": "editorHasSelection",
+          "group": "navigation@100"
+        },
+        {
+          "command": "codexInlineContext.copySelectionRef",
+          "when": "editorHasSelection",
+          "group": "navigation@101"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "codexInlineContext.addSelection",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+alt+l",
+        "when": "editorTextFocus && editorHasSelection"
+      },
+      {
+        "command": "codexInlineContext.copySelectionRef",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c",
+        "when": "editorTextFocus && editorHasSelection"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "lint": "eslint .",
+    "check": "npm run compile && npm run lint",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "@stylistic/eslint-plugin": "^4.4.1",
+    "@types/node": "^22.15.21",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.4.2",
+    "eslint": "^9.28.0",
+    "typescript": "^6.0.0",
+    "typescript-eslint": "^8.34.0"
+  },
+  "extensionDependencies": [
+    "openai.chatgpt"
+  ]
+}
