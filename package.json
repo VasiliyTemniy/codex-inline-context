@@ -1,8 +1,8 @@
 {
   "name": "codex-inline-context",
   "displayName": "Codex Inline Context",
-  "description": "Add selected ranges to Codex context and copy visible inline @file#line-range references.",
-  "version": "0.0.1",
+  "description": "Add selected ranges to Codex context and insert visible inline file-range hints.",
+  "version": "1.0.0",
   "publisher": "VasiliyTemniy",
   "license": "MIT",
   "repository": {
@@ -69,14 +69,44 @@
         "mac": "cmd+alt+c",
         "when": "editorTextFocus && editorHasSelection"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Codex Inline Context",
+      "properties": {
+        "codexInlineContext.inlineTextMode": {
+          "type": "string",
+          "enum": [
+            "chipHint",
+            "atReference"
+          ],
+          "enumDescriptions": [
+            "Insert a small text hint that points at the Codex context chip without creating an @ file reference.",
+            "Insert an @file#line-range reference, which may become a clickable file link in the Codex composer."
+          ],
+          "default": "chipHint",
+          "description": "Controls the text inserted into the Codex composer after adding the selected range as a context chip."
+        },
+        "codexInlineContext.debugLogging": {
+          "type": "boolean",
+          "default": false,
+          "description": "Write verbose diagnostic logs to the Codex Inline Context output channel."
+        },
+        "codexInlineContext.debugNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show success/debug notifications after commands complete."
+        }
+      }
+    }
   },
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -watch -p .",
     "lint": "eslint .",
     "check": "npm run compile && npm run lint",
-    "package": "vsce package"
+    "package": "vsce package --out codex-inline-context.vsix",
+    "install:local": "code --install-extension codex-inline-context.vsix --force",
+    "reinstall:local": "npm run package && npm run install:local"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",

@@ -7,9 +7,22 @@ const CODEX_SECONDARY_VIEW_FOCUS_COMMAND = 'chatgpt.sidebarSecondaryView.focus';
 const PASTE_COMMAND = 'editor.action.clipboardPasteAction';
 const TYPE_COMMAND = 'type';
 const CODEX_FOCUS_SETTLE_DELAY_MS = 0;
+const CONFIG_SECTION = 'codexInlineContext';
+
+type InlineTextMode = 'chipHint' | 'atReference';
+
+interface SelectionReference {
+  readonly inlineText: string;
+  readonly pathWithRange: string;
+}
+
+let outputChannel: vscode.OutputChannel | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
+  outputChannel = vscode.window.createOutputChannel('Codex Inline Context');
+
   context.subscriptions.push(
+    outputChannel,
     vscode.commands.registerCommand(
       'codexInlineContext.addSelection',
       addSelection,
@@ -28,9 +41,7 @@ async function addSelection(): Promise<void> {
   const reference = getActiveSelectionReference();
 
   if (!reference) {
-    void vscode.window.showWarningMessage(
-      'Select a range in a saved file first.',
-    );
+    warn('Select a range in a saved file first.');
     return;
   }
 
@@ -40,41 +51,43 @@ async function addSelection(): Promise<void> {
     await vscode.commands.executeCommand(CODEX_ADD_TO_THREAD_COMMAND);
   } catch {
     addedToThread = false;
+    warn('Codex add-to-thread command was unavailable.');
   }
 
-  await vscode.env.clipboard.writeText(reference);
+  await vscode.env.clipboard.writeText(reference.inlineText);
+  debug(`Copied inline text: ${reference.inlineText}`);
 
   let attemptedInlineInsert = false;
 
   if (addedToThread) {
-    attemptedInlineInsert = await insertReferenceIntoCodexComposer(reference);
+    attemptedInlineInsert = await insertReferenceIntoCodexComposer(
+      reference.inlineText,
+    );
   }
 
-  const message = addedToThread
-    ? getAddSelectionMessage(
-      reference,
+  notifyDebug(
+    getAddSelectionMessage(
+      reference.inlineText,
+      addedToThread,
       attemptedInlineInsert,
-    )
-    : `Copied ${reference}; Codex add-to-thread command was unavailable`;
-
-  void vscode.window.showInformationMessage(message);
+    ),
+  );
 }
 
 async function copySelectionRef(): Promise<void> {
   const reference = getActiveSelectionReference();
 
   if (!reference) {
-    void vscode.window.showWarningMessage(
-      'Select a range in a saved file first.',
-    );
+    warn('Select a range in a saved file first.');
     return;
   }
 
-  await vscode.env.clipboard.writeText(reference);
-  void vscode.window.showInformationMessage(`Copied ${reference}`);
+  await vscode.env.clipboard.writeText(reference.inlineText);
+  debug(`Copied inline text: ${reference.inlineText}`);
+  notifyDebug(`Copied ${reference.inlineText}`);
 }
 
-function getActiveSelectionReference(): string | undefined {
+function getActiveSelectionReference(): SelectionReference | undefined {
   const editor = vscode.window.activeTextEditor;
 
   if (!editor) {
@@ -97,8 +110,12 @@ function getActiveSelectionReference(): string | undefined {
   const rangeFragment = startLine === endLine
     ? `${startLine}`
     : `${startLine}-${endLine}`;
+  const pathWithRange = `${relativePath}#${rangeFragment}`;
 
-  return `@${relativePath}#${rangeFragment}`;
+  return {
+    inlineText: formatInlineText(pathWithRange),
+    pathWithRange,
+  };
 }
 
 function getInclusiveSelectedLines(selection: vscode.Selection): {
@@ -137,15 +154,37 @@ async function insertReferenceIntoCodexComposer(reference: string): Promise<bool
   return executeBestEffortCommand(TYPE_COMMAND, { text: reference });
 }
 
-function getAddSelectionMessage(
-  reference: string,
-  attemptedInlineInsert: boolean,
-): string {
-  if (attemptedInlineInsert) {
-    return `Added to Codex context, copied ${reference}, and attempted inline insert`;
+function formatInlineText(pathWithRange: string): string {
+  const mode = getInlineTextMode();
+
+  if (mode === 'atReference') {
+    return `@${pathWithRange}`;
   }
 
-  return `Added to Codex context and copied ${reference}`;
+  return `(see Codex context chip: ${pathWithRange})`;
+}
+
+function getInlineTextMode(): InlineTextMode {
+  return getConfig().get<InlineTextMode>(
+    'inlineTextMode',
+    'chipHint',
+  );
+}
+
+function getAddSelectionMessage(
+  inlineText: string,
+  addedToThread: boolean,
+  attemptedInlineInsert: boolean,
+): string {
+  if (!addedToThread) {
+    return `Copied ${inlineText}; Codex add-to-thread command was unavailable.`;
+  }
+
+  if (attemptedInlineInsert) {
+    return `Added Codex context chip and attempted inline insert: ${inlineText}`;
+  }
+
+  return `Added Codex context chip and copied ${inlineText}`;
 }
 
 async function executeBestEffortCommand(
@@ -159,8 +198,10 @@ async function executeBestEffortCommand(
       await vscode.commands.executeCommand(command, args);
     }
 
+    debug(`Command succeeded: ${command}`);
     return true;
   } catch {
+    debug(`Command failed: ${command}`);
     return false;
   }
 }
@@ -176,4 +217,34 @@ function sleep(milliseconds: number): Promise<void> {
 
 function nextTick(): Promise<void> {
   return sleep(0);
+}
+
+function getConfig(): vscode.WorkspaceConfiguration {
+  return vscode.workspace.getConfiguration(CONFIG_SECTION);
+}
+
+function debug(message: string): void {
+  if (!getConfig().get<boolean>('debugLogging', false)) {
+    return;
+  }
+
+  outputChannel?.appendLine(
+    `[${new Date().toISOString()}] DEBUG ${message}`,
+  );
+}
+
+function warn(message: string): void {
+  outputChannel?.appendLine(
+    `[${new Date().toISOString()}] WARN ${message}`,
+  );
+}
+
+function notifyDebug(message: string): void {
+  debug(message);
+
+  if (!getConfig().get<boolean>('debugNotifications', false)) {
+    return;
+  }
+
+  void vscode.window.showInformationMessage(message);
 }
