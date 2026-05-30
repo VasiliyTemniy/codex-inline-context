@@ -2,7 +2,7 @@
 
 Codex Inline Context is a small VS Code extension for people who want selected code ranges to be visible in the prompt itself.
 
-It calls Codex's native `chatgpt.addToThread` command for the selected range, then copies an inline reference like:
+It calls Codex's native `chatgpt.addToThread` command for the selected range, copies an inline reference, then tries to insert that reference into the focused Codex composer:
 
 `@src/example.ts#120-138`
 
@@ -10,7 +10,7 @@ The goal is simple: make intent visible, not hidden only in attached context chi
 
 ## Commands
 
-- `Codex Inline Context: Add Selection`: adds the selected range to Codex context and copies the inline reference.
+- `Codex Inline Context: Add Selection`: adds the selected range to Codex context, copies the inline reference, and tries to insert it into the focused Codex composer.
 - `Codex Inline Context: Copy Selection Reference`: copies only the inline reference.
 
 ## Default Keybindings

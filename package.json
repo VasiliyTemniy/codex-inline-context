@@ -3,7 +3,7 @@
   "displayName": "Codex Inline Context",
   "description": "Add selected ranges to Codex context and copy visible inline @file#line-range references.",
   "version": "0.0.1",
-  "publisher": "vas",
+  "publisher": "VasiliyTemniy",
   "license": "MIT",
   "repository": {
     "type": "git",
